@@ -111,6 +111,7 @@ const bodyRef = ref(null)
 const inputRef = ref(null)
 const fileInputRef = ref(null)
 const lastQuery = ref('')
+const lastAttachment = ref(null)
 const pendingFile = ref(null)
 const showHistory = ref(false)
 const pendingDeleteId = ref(null)
@@ -124,6 +125,7 @@ const examples = [
 function handleSend() {
   if (!inputText.value.trim() && !pendingFile.value) return
   lastQuery.value = inputText.value
+  lastAttachment.value = pendingFile.value
   send(inputText.value, pendingFile.value)
   inputText.value = ''
   pendingFile.value = null
@@ -178,7 +180,7 @@ async function handleFileSelect(e) {
   }
 }
 
-function retry() { if (lastQuery.value) send(lastQuery.value) }
+function retry() { if (lastQuery.value || lastAttachment.value) send(lastQuery.value, lastAttachment.value) }
 
 function autoResize() {
   const el = inputRef.value
@@ -187,9 +189,15 @@ function autoResize() {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px'
 }
 
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 function renderMarkdown(text) {
   if (!text) return ''
-  return text
+  // Escape HTML first to prevent XSS
+  const safe = escapeHtml(text)
+  return safe
     // Code blocks (```)
     .replace(/```([\s\S]*?)```/g, '<pre class="md-code"><code>$1</code></pre>')
     // Inline code
@@ -200,17 +208,16 @@ function renderMarkdown(text) {
     .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
     // Ordered list items
     .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
-    // Links (must come after code to avoid matching inside code)
+    // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => {
       if (href.startsWith('#')) {
-        const safeHref = href.replace(/'/g, "\\'")
-        return `<a href="${href}" class="deep-link" onclick="event.preventDefault();window.__chatDeepLink?.('${safeHref}')">${label}</a>`
+        return '<a href="' + href + '" class="deep-link" onclick="event.preventDefault();window.__chatDeepLink?.(\'' + href.replace(/'/g, "\\'") + '\')">' + label + '</a>'
       }
-      return `<a href="${href}" target="_blank">${label}</a>`
+      return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + '</a>'
     })
     // Wrap consecutive <li> in <ul>
     .replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul class="md-list">$1</ul>')
-    // Line breaks (skip if inside <pre>)
+    // Line breaks
     .replace(/\n/g, '<br>')
 }
 

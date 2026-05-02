@@ -135,7 +135,7 @@ export function useChat() {
   }
 
   async function send(text, attachment) {
-    if (!text.trim() || isStreaming.value) return
+    if ((!text.trim() && !attachment) || isStreaming.value) return
     if (!isConfigured()) {
       errorMsg.value = '请先在设置中配置 API Key'
       return
