@@ -3,7 +3,7 @@
     <!-- 页面头 -->
     <div class="page-header">
       <div>
-        <h1 class="ph-title">权责清单</h1>
+        <h1 class="ph-title">{{ settings.flowModuleName }}</h1>
         <p class="ph-sub">共 {{ realItems.length }} 条权责事项</p>
       </div>
     </div>
@@ -112,11 +112,13 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { getAuthority } from '../data/api.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 import FlowSteps from '../components/FlowSteps.vue'
 import { DOMAINS, getDomainByKey } from '../utils/authorityCategories.js'
 import { bigramScore } from '../utils/bigram.js'
 
 const route = useRoute()
+const { settings } = useEnterprise()
 const items = ref([])
 const q = ref('')
 const filterCat = ref('')
@@ -125,10 +127,10 @@ const filterDomain = ref('')
 const highlight = ref('')
 
 const approvalChips = [
-  { label: '项目公司审批', value: '项目公司' },
-  { label: '西北投资审批', value: '西北投资' },
-  { label: '决策机构审批', value: '决策' },
-  { label: '总部及以上', value: '总部' },
+  { label: '项目公司审批', value: 'project' },
+  { label: '平台公司审批', value: 'platform' },
+  { label: '决策机构审批', value: 'decision' },
+  { label: '总部及以上', value: 'hq' },
 ]
 
 function scrollToHighlight(id, delay = 0) {
@@ -176,11 +178,11 @@ function scrollToHighlight(id, delay = 0) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.q)      q.value          = String(route.query.q)
   if (route.query.cat)    filterCat.value  = String(route.query.cat)
   if (route.query.domain) filterDomain.value = String(route.query.domain)
-  items.value = getAuthority()
+  items.value = await getAuthority()
 
   if (route.query.id) scrollToHighlight(route.query.id, 500)
 })
@@ -210,7 +212,7 @@ const categories = computed(() => {
   return [
     { label: '全部', value: '', count: all.length },
     { label: '项目公司事项', value: 'pc', count: pc.length },
-    { label: '西北投资事项', value: 'nw', count: nw.length },
+    { label: '平台公司事项', value: 'nw', count: nw.length },
   ]
 })
 
@@ -251,14 +253,20 @@ const filtered = computed(() => {
   }
 
   // 审批层级
-  if (filterApproval.value === '项目公司') {
+  if (filterApproval.value === 'project') {
     list = list.filter(i => finalOrg(i) === '项目公司')
-  } else if (filterApproval.value === '西北投资') {
-    list = list.filter(i => finalOrg(i).includes('西北投资'))
-  } else if (filterApproval.value === '决策') {
+  } else if (filterApproval.value === 'platform') {
+    list = list.filter(i => {
+      const org = finalOrg(i)
+      return org && org !== '项目公司' && !org.includes('总部') && !org.includes('决策') && !org.includes('集团')
+    })
+  } else if (filterApproval.value === 'decision') {
     list = list.filter(i => finalOrg(i).includes('决策'))
-  } else if (filterApproval.value === '总部') {
-    list = list.filter(i => ['中交投资总部', '中国交建'].includes(finalOrg(i)))
+  } else if (filterApproval.value === 'hq') {
+    list = list.filter(i => {
+      const org = finalOrg(i)
+      return org && (org.includes('总部') || org.includes('集团'))
+    })
   }
 
   return list

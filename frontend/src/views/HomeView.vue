@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h1 class="ph-title">系统概览</h1>
-        <p class="ph-sub">西北投资（园区运营公司）制度管理平台</p>
+        <p class="ph-sub">{{ settings.companyName || settings.appName }}制度管理平台</p>
       </div>
       <span class="ph-date">{{ today }}</span>
     </div>
@@ -80,7 +80,7 @@
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
             </svg>
-            制度库看板
+            {{ settings.regModuleName }}看板
           </span>
           <span class="board-meta">7 个职能域 · {{ totalRegs }} 条制度</span>
         </div>
@@ -110,10 +110,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(199,217,240,0.65)" stroke-width="2">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            权责清单看板
+            {{ settings.flowModuleName }}看板
           </span>
           <span class="board-meta">
-            合计 {{ authTotal }} 条 · 项目公司 {{ authPcCount }} · 西北投资 {{ authNwCount }}
+            合计 {{ authTotal }} 条 · 项目公司 {{ authPcCount }} · 平台公司 {{ authNwCount }}
           </span>
         </div>
         <div class="domain-list">
@@ -142,14 +142,14 @@
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
           <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
         </svg>
-        西北投资（园区运营公司）组织架构
+        {{ settings.companyName || '企业' }}组织架构
       </div>
       <div class="org-chart">
         <!-- 上级 -->
-        <div class="oc-tier"><div class="oc-node oc-parent">中交投资有限公司</div></div>
+        <div class="oc-tier"><div class="oc-node oc-parent">上级单位</div></div>
         <div class="oc-v-line"></div>
         <!-- 本体 -->
-        <div class="oc-tier"><div class="oc-node oc-root">西北投资（园区运营公司）</div></div>
+        <div class="oc-tier"><div class="oc-node oc-root">{{ settings.companyName || '本公司' }}</div></div>
         <div class="oc-v-line"></div>
         <!-- 职能部门 -->
         <div class="oc-dept-section">
@@ -192,7 +192,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getRegulations, getTree, getAuthority } from '../data/api.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 import { DOMAINS, getDomainByKey, getDomainByModuleName } from '../utils/authorityCategories.js'
+
+const { settings } = useEnterprise()
 
 const regs = ref([])
 const tree = ref({})
@@ -216,23 +219,23 @@ const orgDepts = [
 
 const parkCategories = [
   {
-    brand: '中交科技城', type: '研发制造',
-    companies: ['杭州智慧港', '济南科创', '济南投资', '怡和中源', '南京产投', '浙江智慧交通', '郑州数科', '中交高科', '西安数字交通'],
+    brand: '科技城', type: '研发制造',
+    companies: ['杭州智慧港', '济南科创', '南京产投', '西安数字交通'],
   },
   {
-    brand: '中交物流港', type: '冷链物流',
+    brand: '物流港', type: '冷链物流',
     companies: ['岳阳物流'],
   },
   {
-    brand: '中交智数谷', type: '数据算力',
+    brand: '智数谷', type: '数据算力',
     companies: ['中卫大数据'],
   },
 ]
 
-onMounted(() => {
-  regs.value = getRegulations()
-  tree.value = getTree()
-  authItems.value = getAuthority()
+onMounted(async () => {
+  regs.value = await getRegulations()
+  tree.value = await getTree()
+  authItems.value = await getAuthority()
 })
 
 const totalRegs = computed(() => regs.value.length)

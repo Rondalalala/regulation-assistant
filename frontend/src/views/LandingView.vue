@@ -23,10 +23,10 @@
         <div>
           <div class="eyebrow-pill">
             <span class="pulse-dot"></span>
-            西北投资产业发展中心 · 数字化平台
+            {{ settings.companyName || settings.appName }}
           </div>
-          <h1 class="hero-title">制度助理</h1>
-          <p class="hero-subtitle">西北投资制度管理平台</p>
+          <h1 class="hero-title">{{ settings.appName }}</h1>
+          <p class="hero-subtitle">{{ settings.companyName ? settings.companyName + '制度管理平台' : '制度管理平台' }}</p>
           <div class="hero-stats">
             <div class="hero-stat">
               <div class="stat-value"><span>{{ heroRegs }}</span><span class="stat-suffix">条</span></div>
@@ -71,7 +71,7 @@
                 <div class="activity-dot" style="background:#60a5fa;box-shadow:0 0 5px rgba(96,165,250,0.6)"></div>
                 <div>
                   <div class="activity-text">{{ authTotal || '—' }} 条权责事项精准关联</div>
-                  <div class="activity-meta">制度–权责清单全链路映射</div>
+                  <div class="activity-meta">{{ settings.regModuleName }}–{{ settings.flowModuleName }}全链路映射</div>
                 </div>
               </div>
               <div class="activity-row">
@@ -122,7 +122,7 @@
                 <path d="M21.5 22.5h8M21.5 26h5" stroke="#93c5fd" stroke-width="1.2" stroke-linecap="round" opacity="0.9"/>
               </svg>
             </div>
-            <h3 class="feature-card-title">制度库管理</h3>
+            <h3 class="feature-card-title">{{ settings.regModuleName }}</h3>
             <p class="feature-card-desc">结构化归档全公司制度文档，支持版本历史追踪、在线审批流转、全文语义检索与多维分类浏览，确保每条制度可查、可溯、可执行。</p>
             <div class="feature-tags"><span class="feat-tag">版本管理</span><span class="feat-tag">全文检索</span><span class="feat-tag">审批流转</span><span class="feat-tag">分类归档</span></div>
           </div>
@@ -134,7 +134,7 @@
                 <path d="M14 18.5l3.5 3.5 7-7" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <h3 class="feature-card-title">权责清单</h3>
+            <h3 class="feature-card-title">{{ settings.flowModuleName }}</h3>
             <p class="feature-card-desc">精确界定各岗位的权力边界与履职责任，支持权责矩阵可视化呈现、岗位-制度精准关联，让合规追踪有据可查、有章可循。</p>
             <div class="feature-tags"><span class="feat-tag">权责矩阵</span><span class="feat-tag">岗位映射</span><span class="feat-tag">合规追踪</span><span class="feat-tag">200+ 事项</span></div>
           </div>
@@ -158,7 +158,7 @@
               </svg>
             </div>
             <h3 class="feature-card-title">组织架构</h3>
-            <p class="feature-card-desc">可视化呈现西北投资完整组织层级，按 7 大职能域浏览部门与岗位，并与制度文档、权责事项形成三维关联图谱。</p>
+            <p class="feature-card-desc">可视化呈现{{ settings.companyName || '企业' }}完整组织层级，按 7 大职能域浏览部门与岗位，并与制度文档、权责事项形成三维关联图谱。</p>
             <div class="feature-tags"><span class="feat-tag">可视化图谱</span><span class="feat-tag">7 大职能域</span><span class="feat-tag">三维关联</span></div>
           </div>
         </div>
@@ -176,11 +176,11 @@
           <div class="mockup-frame">
             <div class="titlebar">
               <span class="tb-dot tb-red"></span><span class="tb-dot tb-yellow"></span><span class="tb-dot tb-green"></span>
-              <span class="tb-label">制度助理 — 西北投资制度管理平台</span>
+              <span class="tb-label">{{ settings.appName }} — {{ settings.companyName ? settings.companyName + '制度管理平台' : '制度管理平台' }}</span>
             </div>
             <div class="mockup-body">
               <div class="m-sidebar">
-                <div class="m-sidebar-logo"><div class="m-logo-text">制度助理</div><div class="m-logo-sub">西北投资（园区运营公司）</div></div>
+                <div class="m-sidebar-logo"><div class="m-logo-text">{{ settings.appName }}</div><div class="m-logo-sub">{{ settings.companyName || '企业制度管理平台' }}</div></div>
                 <div class="m-section-label">职能域</div>
                 <div class="m-nav-item active"><div class="m-nav-dot"></div>综合管理</div>
                 <div class="m-nav-item"><div class="m-nav-dot"></div>财务管理</div>
@@ -190,12 +190,12 @@
                 <div class="m-nav-item"><div class="m-nav-dot"></div>安全管理</div>
                 <div class="m-nav-item"><div class="m-nav-dot"></div>法务合规</div>
                 <div class="m-section-label" style="margin-top:6px">工具</div>
-                <div class="m-nav-item"><div class="m-nav-dot"></div>权责清单</div>
+                <div class="m-nav-item"><div class="m-nav-dot"></div>{{ settings.flowModuleName }}</div>
                 <div class="m-nav-item"><div class="m-nav-dot"></div>组织架构</div>
               </div>
               <div class="m-main">
                 <div class="m-header">
-                  <div class="m-title">综合管理 · 制度库</div>
+                  <div class="m-title">综合管理 · {{ settings.regModuleName }}</div>
                   <div class="m-search"><svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>搜索制度文件...</div>
                 </div>
                 <div class="m-stat-row">
@@ -220,13 +220,9 @@
     <footer id="footer">
       <div class="footer-inner">
         <div class="footer-hierarchy">
-          <span>中交投资有限公司</span>
-          <span class="footer-sep">›</span>
-          <span class="footer-hl">西北投资（园区运营公司）</span>
-          <span class="footer-sep">›</span>
-          <span style="color:rgba(199,217,240,0.55)">产业发展中心</span>
+          <span>{{ settings.companyName || settings.appName }}</span>
         </div>
-        <div class="footer-copy">© 2025 西北投资产业发展中心 · 制度助理 v1.0</div>
+        <div class="footer-copy">© {{ new Date().getFullYear() }} {{ settings.companyName || '' }} · {{ settings.appName }} v1.0</div>
       </div>
     </footer>
 
@@ -236,8 +232,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getRegulations, getTree, getAuthority } from '../data/api.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 import { DOMAINS, getDomainByModuleName } from '../utils/authorityCategories.js'
 
+const { settings } = useEnterprise()
 const canvas = ref(null)
 const regs = ref([])
 const authItems = ref([])
@@ -367,12 +365,12 @@ function initScrollFade() {
   document.querySelectorAll('.fade-in').forEach(el => fadeIO.observe(el))
 }
 
-onMounted(() => {
+onMounted(async () => {
   initParticles()
   initScrollFade()
-  regs.value = getRegulations()
-  tree.value = getTree()
-  authItems.value = getAuthority()
+  regs.value = await getRegulations()
+  tree.value = await getTree()
+  authItems.value = await getAuthority()
   animateTo(regs.value.length, v => { heroRegs.value = v })
   animateTo(authTotal.value, v => { heroAuth.value = v })
 })

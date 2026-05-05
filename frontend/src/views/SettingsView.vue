@@ -6,6 +6,35 @@
     </div>
 
     <div class="settings-body">
+      <!-- 企业信息配置 -->
+      <div class="card settings-card">
+        <h3>企业信息</h3>
+
+        <div class="field">
+          <label>应用名称</label>
+          <input v-model="appName" type="text" class="input" placeholder="制度助手">
+          <span class="hint">显示在页面标题、侧边栏 Logo 等位置</span>
+        </div>
+
+        <div class="field">
+          <label>制度模块名称</label>
+          <input v-model="regModuleName" type="text" class="input" placeholder="制度管理">
+          <span class="hint">替代默认的“制度库”等叫法</span>
+        </div>
+
+        <div class="field">
+          <label>流程模块名称</label>
+          <input v-model="flowModuleName" type="text" class="input" placeholder="流程管理">
+          <span class="hint">替代默认的“权责清单”等叫法</span>
+        </div>
+
+        <div class="field">
+          <label>企业名称</label>
+          <input v-model="companyName" type="text" class="input" placeholder="">
+          <span class="hint">用于落地页、AI 助手欢迎语等品牌展示，留空则不显示</span>
+        </div>
+      </div>
+
       <!-- API 配置 -->
       <div class="card settings-card">
         <h3>API 配置</h3>
@@ -130,6 +159,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 import { buildIndex, getIndexStatus, clearIndex } from '../composables/useRag.js'
 
 const {
@@ -139,12 +169,22 @@ const {
   testConnection,
 } = useSettings()
 
+const {
+  settings: entSettings,
+  setAppName, setRegModuleName, setFlowModuleName, setCompanyName,
+} = useEnterprise()
+
 const baseUrl = ref(settings.baseUrl)
 const apiKey = ref(settings.apiKey)
 const model = ref(settings.model)
 const embedModel = ref(settings.embedModel)
 const embedBaseUrl = ref(settings.embedBaseUrl)
 const embedApiKey = ref(settings.embedApiKey)
+
+const appName = ref(entSettings.appName)
+const regModuleName = ref(entSettings.regModuleName)
+const flowModuleName = ref(entSettings.flowModuleName)
+const companyName = ref(entSettings.companyName)
 
 const presetModels = ['jiaorong-instruct', 'jiaorong-deepseek-v4-flash']
 const modelSelect = ref(presetModels.includes(settings.model) ? settings.model : '__custom')
@@ -172,6 +212,10 @@ function save() {
   setEmbedModel(embedModel.value)
   setEmbedBaseUrl(embedBaseUrl.value)
   setEmbedApiKey(embedApiKey.value)
+  setAppName(appName.value)
+  setRegModuleName(regModuleName.value)
+  setFlowModuleName(flowModuleName.value)
+  setCompanyName(companyName.value)
   saving.value = false
   testResult.value = { ok: true, msg: '配置已保存' }
 }

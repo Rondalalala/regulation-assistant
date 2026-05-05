@@ -191,11 +191,11 @@ const tabs = [
   { key: 'authority', label: '相关权责' },
 ]
 
-function load(id) {
+async function load(id) {
   loading.value = true
   reg.value = null
   try {
-    reg.value = getRegulation(id)
+    reg.value = await getRegulation(id)
     activeTab.value = 'text'
   } finally {
     loading.value = false

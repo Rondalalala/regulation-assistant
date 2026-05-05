@@ -46,7 +46,7 @@
             <div class="welcome-icon">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
-            <p class="welcome-text">你好！我是中交西北投资制度管理 AI 助手，可以帮你查询业务流程和审批要求。</p>
+            <p class="welcome-text">你好！我是{{ settings.companyName || '' }}{{ settings.appName }} AI 助手，可以帮你查询业务流程和审批要求。</p>
             <div class="welcome-examples">
               <button v-for="ex in examples" :key="ex" class="example-btn" @click="send(ex)">{{ ex }}</button>
             </div>
@@ -100,11 +100,13 @@ import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChat } from '../composables/useChat.js'
 import { useSettings } from '../composables/useSettings.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 
 const router = useRouter()
 const { messages, isStreaming, isOpen, errorMsg, hasMessages, sessionList, activeId,
   closePanel, send, stopStreaming, newSession, switchSession, deleteSession } = useChat()
 const { isConfigured } = useSettings()
+const { settings } = useEnterprise()
 
 const inputText = ref('')
 const bodyRef = ref(null)

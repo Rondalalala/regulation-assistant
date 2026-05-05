@@ -1,22 +1,35 @@
-// 纯前端 API 层 —— 所有数据在构建时打包，不依赖后端
-import {
-  regulations as rawRegs,
-  authority    as rawAuth,
-  authorityMapping,
-  texts,
-  diagrams,
-} from './bundle.js'
+// API 层 —— 异步 fetch，带简单内存缓存
+import { bigramScore } from '../utils/bigram.js'
 
-// ── 制度列表（过滤无效行）──────────────────────────────────────────
-const regulations = rawRegs.filter(
-  r => r.id && r.id !== '制度序号' && r.name !== '制度名称'
-)
+const API_BASE = '/api'
 
-export function getRegulations() { return regulations }
+// ── 内存缓存 ───────────────────────────────────────────────────────
+let cacheRegulations = null
+let cacheAuthority = null
+let cacheAuthorityMapping = null
+let cacheTexts = {}
+let cacheDiagrams = {}
 
-export function getTree() {
+async function fetchJSON(path) {
+  const res = await fetch(`${API_BASE}${path}`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+// ── 制度列表 ───────────────────────────────────────────────────────
+export async function getRegulations() {
+  if (cacheRegulations) return cacheRegulations
+  const data = await fetchJSON('/regulations')
+  cacheRegulations = data.filter(
+    r => r.id && r.id !== '制度序号' && r.name !== '制度名称'
+  )
+  return cacheRegulations
+}
+
+export async function getTree() {
+  const regs = await getRegulations()
   const tree = {}
-  for (const r of regulations) {
+  for (const r of regs) {
     const mod  = r.module || '其他'
     const item = r.item   || '其他'
     if (!tree[mod])       tree[mod] = {}
@@ -26,59 +39,57 @@ export function getTree() {
   return tree
 }
 
-export function getAuthority() { return rawAuth }
+// ── 流程事项 ───────────────────────────────────────────────────────
+export async function getAuthority() {
+  if (cacheAuthority) return cacheAuthority
+  cacheAuthority = await fetchJSON('/authority')
+  return cacheAuthority
+}
 
-export function getRegulation(id) {
-  const reg = regulations.find(r => r.id === id)
-  if (!reg) return null
-  const textData = texts[id]    || {}
-  const diagData = diagrams[id] || {}
+// ── 单条制度详情 ───────────────────────────────────────────────────
+export async function getRegulation(id) {
+  const [meta, textData, diagData] = await Promise.all([
+    fetchJSON(`/regulations/${encodeURIComponent(id)}`).catch(() => null),
+    fetchJSON(`/regulations/${encodeURIComponent(id)}/text`).catch(() => null),
+    fetchJSON(`/regulations/${encodeURIComponent(id)}/diagrams`).catch(() => null),
+  ])
+
+  if (!meta) return null
+
+  // 缓存 text / diagrams
+  if (textData) cacheTexts[id] = textData
+  if (diagData) cacheDiagrams[id] = diagData
+
   return {
-    ...reg,
-    text:            textData.text   || '',
-    blocks:          textData.blocks || [],
-    charts:          diagData.charts || [],
-    authority_items: matchAuthority(id, reg.name || '', reg.module || ''),
+    ...meta,
+    text:            textData?.text   || '',
+    blocks:          textData?.blocks || [],
+    charts:          diagData?.charts || [],
+    authority_items: await matchAuthority(id, meta.name || '', meta.module || ''),
   }
 }
 
-import { bigramScore } from '../utils/bigram.js'
-
-// ── 搜索 ────────────────────────────────────────────────────────────
-export function search(q) {
+// ── 搜索 ───────────────────────────────────────────────────────────
+export async function search(q) {
   if (!q.trim()) return []
-  const ql = q.toLowerCase().trim()
-
-  const scored = regulations.map(r => {
-    const fields = [
-      r.name   || '',
-      r.module || '',
-      r.item   || '',
-      r.dept   || '',
-      r.id     || '',
-    ]
-    let exact = false
-    let best = 0
-    for (const f of fields) {
-      const fl = f.toLowerCase()
-      if (fl.includes(ql)) exact = true
-      const s = bigramScore(ql, fl)
-      if (s > best) best = s
-    }
-    return { item: r, exact, score: best }
-  })
-
-  const exactHits = scored.filter(s => s.exact).sort((a, b) => b.score - a.score)
-  const fuzzyHits = scored.filter(s => !s.exact && s.score >= 0.4).sort((a, b) => b.score - a.score)
-  return [...exactHits, ...fuzzyHits].slice(0, 30).map(s => s.item)
+  const res = await fetchJSON(`/search?q=${encodeURIComponent(q.trim())}&limit=30`)
+  const regs = res.regulations || []
+  const auths = res.authority || []
+  // 后端已经排序，直接合并
+  return [
+    ...regs.map(r => ({ ...r, type: 'regulation', score: r.score || 0 })),
+    ...auths.map(a => ({ ...a, type: 'authority', score: a.score || 0 })),
+  ]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 30)
 }
 
 // ── 权责匹配（与后端逻辑一致）──────────────────────────────────────
 const SUFFIXES = /(管理办法|实施细则|工作规则|管理规定|实施方案|操作规程|暂行规定|工作制度|管理制度|实施办法|管理规程|办法|规定|规则|细则|方案|制度)$/
-const SKIP = new Set(['中交西北投资发展有限公司', '西北投资', '中交投资', '有限公司', '公司'])
+const SKIP = new Set(['有限公司', '公司'])
 
 function extractKeywords(text) {
-  text = text.replace(/^中交西北投资发展有限公司/, '').trim()
+  text = text.replace(/^有限公司/, '').trim()
   const parts = text.split(/[（）【】、，。\s]+/)
   const kws = []
   for (const p of parts) {
@@ -90,10 +101,18 @@ function extractKeywords(text) {
   return [...new Set(kws)]
 }
 
-function matchAuthority(regId, regName, _regModule) {
+async function matchAuthority(regId, regName, _regModule) {
+  if (!cacheAuthorityMapping) {
+    try {
+      cacheAuthorityMapping = await fetchJSON('/regulations/authority-mapping')
+    } catch {
+      cacheAuthorityMapping = {}
+    }
+  }
+  const rawAuth = await getAuthority()
   const authDict = Object.fromEntries(rawAuth.map(i => [i.key, i]))
-  if (authorityMapping[regId]) {
-    return authorityMapping[regId].map(k => authDict[k]).filter(Boolean)
+  if (cacheAuthorityMapping[regId]) {
+    return cacheAuthorityMapping[regId].map(k => authDict[k]).filter(Boolean)
   }
   const kws = extractKeywords(regName)
   if (!kws.length) return []

@@ -4,8 +4,8 @@
     <nav class="breadcrumb">
       <router-link to="/home" class="bc-link">首页</router-link>
       <span class="bc-sep">›</span>
-      <router-link v-if="domainId || moduleName" to="/regulations" class="bc-link">制度库</router-link>
-      <span v-else class="bc-current">制度库</span>
+      <router-link v-if="domainId || moduleName" to="/regulations" class="bc-link">{{ settings.regModuleName }}</router-link>
+      <span v-else class="bc-current">{{ settings.regModuleName }}</span>
 
       <template v-if="domainId && currentDomain">
         <span class="bc-sep">›</span>
@@ -94,7 +94,7 @@
     <template v-else>
       <div class="page-header">
         <div>
-          <h2 class="page-title">制度库</h2>
+          <h2 class="page-title">{{ settings.regModuleName }}</h2>
           <p class="page-sub">共 {{ totalCount }} 条制度 · 7 个职能域</p>
         </div>
       </div>
@@ -123,15 +123,17 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTree, getRegulations } from '../data/api.js'
+import { useEnterprise } from '../composables/useEnterprise.js'
 import { DOMAINS, getDomainByModuleName, MODULE_NAME_TO_CAT } from '../utils/authorityCategories.js'
 
 const route = useRoute()
+const { settings } = useEnterprise()
 const tree = ref({})
 const allRegs = ref([])
 
-onMounted(() => {
-  tree.value = getTree()
-  allRegs.value = getRegulations()
+onMounted(async () => {
+  tree.value = await getTree()
+  allRegs.value = await getRegulations()
 })
 
 const domainId = computed(() => route.query.domain ? String(route.query.domain) : '')

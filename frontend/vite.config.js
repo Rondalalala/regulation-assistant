@@ -56,4 +56,12 @@ export default defineConfig({
     assetsInlineLimit: 100000000,
     cssCodeSplit: false,
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

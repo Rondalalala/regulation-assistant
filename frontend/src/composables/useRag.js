@@ -1,6 +1,7 @@
 import { getRegulations, getAuthority } from '../data/api.js'
 import { embedText, embedBatch } from './useLlm.js'
 import { useSettings } from './useSettings.js'
+import { useEnterprise } from './useEnterprise.js'
 import { topK } from '../utils/vector.js'
 import { bigramScore } from '../utils/bigram.js'
 
@@ -62,7 +63,7 @@ async function getIndex() {
   return null
 }
 
-function keywordSearch(query, limit = 8) {
+async function keywordSearch(query, limit = 8) {
   const STOP = new Set(['需要','什么','怎么','如何','是否','可以','应该','流程','走','的','了','吗','呢','啊','我','要','去','在','和','与','或','有','是','一下','哪些','怎样','能','请','问','想','规定','要求','内容','相关'])
   const kws = query.replace(/[？?！!，。、：；""''（）【】]/g, ' ')
     .split(/\s+/)
@@ -71,8 +72,8 @@ function keywordSearch(query, limit = 8) {
 
   if (!kws.length) return []
 
-  const regs = getRegulations()
-  const auths = getAuthority()
+  const regs = await getRegulations()
+  const auths = await getAuthority()
 
   // Search regulations
   const regResults = []
@@ -204,7 +205,7 @@ export async function retrieve(query, limit = 8) {
   // If still fewer than 3 regulations, supplement with keyword search
   const regCount = results.filter(r => r.type === 'regulation').length
   if (regCount < 3) {
-    const kwResults = keywordSearch(query, limit)
+    const kwResults = await keywordSearch(query, limit)
     const regFromKw = kwResults.filter(r => r.type === 'regulation' && !results.find(x => x.id === r.id))
     const fill = regFromKw.slice(0, 3 - regCount)
     results.push(...fill)
@@ -214,6 +215,8 @@ export async function retrieve(query, limit = 8) {
 }
 
 export function buildSystemPrompt(results) {
+  const { settings } = useEnterprise()
+  const company = settings.companyName || '本公司'
   const regs = results.filter(r => r.type === 'regulation')
   const auths = results.filter(r => r.type === 'authority')
 
@@ -229,7 +232,7 @@ export function buildSystemPrompt(results) {
     ).join('\n\n')
   }
 
-  return `你是中交西北投资发展有限公司的制度管理AI助手。用户是公司员工，向你咨询业务流程、审批权限、制度规定等问题。
+  return `你是${company}的制度管理AI助手。用户是公司员工，向你咨询业务流程、审批权限、制度规定等问题。
 
 ${context}
 
@@ -249,8 +252,9 @@ ${context}
 
 export async function buildIndex(onProgress) {
   const bundle = await import('../data/bundle.js')
-  const regs = getRegulations().filter(r => r.id && r.id !== '制度序号' && r.name !== '制度名称')
-  const auths = getAuthority()
+  const allRegs = await getRegulations()
+  const regs = allRegs.filter(r => r.id && r.id !== '制度序号' && r.name !== '制度名称')
+  const auths = await getAuthority()
 
   const allChunks = []
   for (const reg of regs) {
