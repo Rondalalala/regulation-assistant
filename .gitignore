@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+
+# 编辑器
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Claude Code / Superpowers 中间产物
+.superpowers/
+.claude/
+backup-*/
+v2-dev-log/
+分发包/
+output_catalog.txt
+目录结构.txt
+
+# 项目数据(用户自己上传,不进仓库)
+data/texts/*.json
+data/diagrams/*.json
+data/regulations_full.json
+data/authority_full.json
+!data/texts/.gitkeep
+!data/diagrams/.gitkeep
+
+# 打包产物
+release/
+*.dmg
+*.exe
+*.zip
+
+# 测试缓存
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Excel/PDF 原始文件
+*.xlsx
+*.xls
+*.pdf
+*.docx
+!docs/数据模板/*.xlsx
