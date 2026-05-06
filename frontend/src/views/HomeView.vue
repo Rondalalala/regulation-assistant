@@ -82,7 +82,7 @@
             </svg>
             {{ settings.regModuleName }}看板
           </span>
-          <span class="board-meta">7 个职能域 · {{ totalRegs }} 条制度</span>
+          <span class="board-meta">{{ totalRegs }} 条制度</span>
         </div>
         <div class="domain-list">
           <router-link
@@ -135,56 +135,6 @@
       </div>
     </div>
 
-    <!-- 组织架构通栏 -->
-    <div class="org-section">
-      <div class="board-title" style="margin-bottom:16px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(199,217,240,0.65)" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        {{ settings.companyName || '企业' }}组织架构
-      </div>
-      <div class="org-chart">
-        <!-- 上级 -->
-        <div class="oc-tier"><div class="oc-node oc-parent">上级单位</div></div>
-        <div class="oc-v-line"></div>
-        <!-- 本体 -->
-        <div class="oc-tier"><div class="oc-node oc-root">{{ settings.companyName || '本公司' }}</div></div>
-        <div class="oc-v-line"></div>
-        <!-- 职能部门 -->
-        <div class="oc-dept-section">
-          <div class="oc-section-label">职能部门</div>
-          <div class="oc-dept-grid">
-            <router-link
-              v-for="d in orgDepts" :key="d.short"
-              :to="`/authority?q=${encodeURIComponent(d.short)}`"
-              class="oc-dept-node"
-            >
-              <div class="oc-dept-name">{{ d.short }}</div>
-              <div v-if="d.sub" class="oc-dept-sub">{{ d.sub }}</div>
-            </router-link>
-          </div>
-        </div>
-        <div class="oc-v-line"></div>
-        <!-- 下属单位 -->
-        <div class="oc-proj-section">
-          <div class="oc-section-label">下属单位（产业园区项目公司）</div>
-          <div class="oc-park-cats">
-            <router-link
-              v-for="cat in parkCategories" :key="cat.brand"
-              to="/authority?cat=pc"
-              class="oc-park-cat"
-            >
-              <div class="oc-park-brand">{{ cat.brand }}</div>
-              <div class="oc-park-type-lbl">{{ cat.type }}</div>
-              <div class="oc-park-companies">
-                <span v-for="co in cat.companies" :key="co" class="oc-co-chip">{{ co }}</span>
-              </div>
-            </router-link>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
   </div>
 </template>
@@ -205,32 +155,6 @@ const today = computed(() => {
   const d = new Date()
   return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`
 })
-
-const orgDepts = [
-  { short: '综合办公室', sub: '党委办公室 · 董事会办公室' },
-  { short: '人力资源部', sub: '党委组织部' },
-  { short: '财务资金部', sub: null },
-  { short: '法律风控部', sub: '纪委 · 审计' },
-  { short: '经营管理中心', sub: null },
-  { short: 'QHSE部', sub: '安全监督 · 应急管理' },
-  { short: '投资拓展部', sub: null },
-  { short: '产业发展中心', sub: '投拓 · 项管 · 招商 · 运营' },
-]
-
-const parkCategories = [
-  {
-    brand: '科技城', type: '研发制造',
-    companies: ['杭州智慧港', '济南科创', '南京产投', '西安数字交通'],
-  },
-  {
-    brand: '物流港', type: '冷链物流',
-    companies: ['岳阳物流'],
-  },
-  {
-    brand: '智数谷', type: '数据算力',
-    companies: ['中卫大数据'],
-  },
-]
 
 onMounted(async () => {
   regs.value = await getRegulations()
@@ -433,83 +357,4 @@ function moduleLink(modName) {
 }
 .dr-arrow { color: rgba(199,217,240,0.25); flex-shrink: 0; }
 
-/* ── 组织架构通栏 ── */
-.org-section {
-  margin-top: 14px;
-  background: rgba(255,255,255,0.045);
-  border: 1px solid rgba(199,217,240,0.11);
-  border-radius: 12px; padding: 18px 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-.org-chart { display: flex; flex-direction: column; align-items: center; }
-.oc-tier { display: flex; justify-content: center; width: 100%; }
-.oc-node {
-  padding: 5px 20px; border-radius: 6px;
-  font-size: 12px; font-weight: 500; text-align: center;
-}
-.oc-parent {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(199,217,240,0.12);
-  color: #7faad4; font-size: 11px;
-}
-.oc-root {
-  background: linear-gradient(135deg, #2563EB 0%, #1a3254 100%);
-  border: 1px solid rgba(96,165,250,0.42);
-  color: white; font-size: 13px; font-weight: 700; padding: 8px 30px;
-  box-shadow: 0 0 22px rgba(37,99,235,0.42), 0 2px 8px rgba(0,0,0,0.32);
-}
-.oc-v-line { width: 1px; height: 14px; background: rgba(199,217,240,0.18); }
-
-.oc-dept-section, .oc-proj-section {
-  width: 100%;
-  border: 1px dashed rgba(199,217,240,0.13);
-  border-radius: 10px; padding: 10px 12px;
-}
-.oc-proj-section { border-color: rgba(96,165,250,0.24); margin-top: 0; }
-.oc-section-label {
-  font-size: 9.5px; font-weight: 600; color: #4a6c8e;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  margin-bottom: 7px; text-align: center;
-}
-.oc-dept-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.oc-dept-node {
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(199,217,240,0.1);
-  border-radius: 7px; text-decoration: none; color: inherit;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-.oc-dept-node:hover {
-  border-color: rgba(96,165,250,0.34);
-  background: rgba(37,99,235,0.1);
-  box-shadow: 0 0 10px rgba(37,99,235,0.22);
-}
-.oc-dept-name { font-size: 11.5px; font-weight: 500; color: #C7D9F0; }
-.oc-dept-sub { font-size: 9px; color: #4a6c8e; margin-top: 2px; line-height: 1.3; }
-
-.oc-park-cats { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
-.oc-park-cat {
-  padding: 10px;
-  background: rgba(37,99,235,0.08);
-  border: 1px solid rgba(96,165,250,0.20);
-  border-radius: 8px; text-decoration: none; color: inherit;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-  cursor: pointer; display: block;
-}
-.oc-park-cat:hover {
-  border-color: rgba(96,165,250,0.40);
-  background: rgba(37,99,235,0.15);
-  box-shadow: 0 0 16px rgba(37,99,235,0.22);
-}
-.oc-park-brand { font-size: 12px; font-weight: 700; color: #60a5fa; margin-bottom: 1px; }
-.oc-park-type-lbl { font-size: 9px; color: #7faad4; margin-bottom: 6px; }
-.oc-park-companies { display: flex; flex-wrap: wrap; gap: 4px; }
-.oc-co-chip {
-  font-size: 10px; color: #C7D9F0;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(199,217,240,0.1);
-  border-radius: 4px; padding: 1px 6px; white-space: nowrap;
-}
 </style>
