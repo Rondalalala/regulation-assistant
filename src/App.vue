@@ -71,7 +71,7 @@
             <template v-for="catNode in node.cats" :key="catNode.catName">
               <p class="nav-sub-label">{{ catNode.catName }}</p>
               <router-link v-for="item in catNode.items" :key="item.key"
-                :to="`/authority?q=${encodeURIComponent(item.name)}`" class="nav-sub-item">
+                :to="`/authority?id=${encodeURIComponent(item.key)}`" class="nav-sub-item">
                 <span class="result-id">{{ item.key }}</span>
                 <span class="result-name">{{ item.name }}</span>
               </router-link>
@@ -201,7 +201,7 @@
             <template v-for="catNode in node.cats" :key="catNode.catName">
               <p class="nav-sub-label">{{ catNode.catName }}</p>
               <router-link v-for="item in catNode.items" :key="item.key"
-                :to="`/authority?q=${encodeURIComponent(item.name)}`" class="nav-sub-item">
+                :to="`/authority?id=${encodeURIComponent(item.key)}`" class="nav-sub-item">
                 <span class="result-id">{{ item.key }}</span>
                 <span class="result-name">{{ item.name }}</span>
               </router-link>

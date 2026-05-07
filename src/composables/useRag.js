@@ -153,6 +153,10 @@ export function buildSystemPrompt(results) {
   const regs = results.filter(r => r.type === 'regulation')
   const auths = results.filter(r => r.type === 'authority')
 
+  // 完整制度目录，防止 AI 编造不存在的制度
+  const allRegs = getRegulations()
+  const catalog = allRegs.map(r => `${r.id} ${r.name}`).join('\n')
+
   let context = ''
   if (regs.length) {
     context += '【相关制度文件】\n' + regs.map((r, i) =>
@@ -169,14 +173,17 @@ export function buildSystemPrompt(results) {
 
 ${context}
 
+【现有制度目录】
+以下是系统中全部真实存在的制度文件，只可引用此目录中的制度，绝不可编造不存在的制度名称：
+${catalog}
+
 【回答要求】
 - 根据参考信息准确回答，如果参考信息不足，明确说明并建议咨询主责部门
-- 必须使用上面参考信息中已有的链接，原样复制，不要自己编造链接格式
-- 制度文件链接格式一定是 [名称](#/regulation/数字) ，例如 [采购管理办法](#/regulation/5-2-1)
-- 权责事项链接格式一定是 [名称](#/authority?id=编码) ，例如 [物资采购审批](#/authority?id=5-2-01)
+- 引用制度时，必须使用「现有制度目录」中真实存在的制度名称和编号，链接格式为 [名称](#/regulation/编号)
+- 引用权责事项时，必须使用参考信息中已有的链接，格式为 [名称](#/authority?id=编码)
+- 绝对不要编造制度名称、编号或条款内容。如果目录中没有相关制度，明确告知用户
 - 如果参考信息中有制度文件，回答时必须引用至少一条制度文件链接
 - 如果参考信息中有权责事项，回答时必须引用至少一条权责事项链接
-- 不要编造制度名称或条款内容
 - 回答要简洁、准确、有条理
 - 用中文回答`
 }

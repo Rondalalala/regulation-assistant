@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { getAuthority } from '../data/api.js'
 import FlowSteps from '../components/FlowSteps.vue'
@@ -135,17 +135,19 @@ onMounted(() => {
   if (route.query.cat)    filterCat.value  = String(route.query.cat)
   if (route.query.domain) filterDomain.value = String(route.query.domain)
   items.value = getAuthority()
+})
 
-  if (route.query.id) {
-    highlight.value = String(route.query.id)
+watch(() => route.query.id, (id) => {
+  if (id) {
+    highlight.value = String(id)
     nextTick(() => {
       setTimeout(() => {
-        const el = document.getElementById(`auth-${route.query.id}`)
+        const el = document.getElementById(`auth-${id}`)
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 300)
     })
   }
-})
+}, { immediate: true })
 
 const realItems = computed(() => items.value.filter(i => i.name && i.flow && i.flow.length > 0))
 

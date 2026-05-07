@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="reg-page">
     <!-- 粘性面包屑头 -->
     <div v-if="reg" class="sticky-header">
@@ -73,8 +73,23 @@
 
         <!-- 制度原文 -->
         <div v-if="activeTab === 'text'" class="tab-panel active">
+          <!-- 原文搜索栏 -->
+          <div v-if="reg.blocks && reg.blocks.length" class="text-search-bar">
+            <div class="search-input-wrap">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input v-model="searchQuery" type="text" class="search-input" placeholder="搜索原文内容..."
+                @input="onSearchInput" @keydown.enter="nextMatch" @keydown.escape="clearSearch" />
+              <template v-if="searchQuery">
+                <span class="search-count">{{ matchIdx + 1 }}/{{ totalMatches }}</span>
+                <button class="search-nav-btn" @click="prevMatch" title="上一个">↑</button>
+                <button class="search-nav-btn" @click="nextMatch" title="下一个">↓</button>
+                <button class="search-nav-btn" @click="clearSearch" title="关闭">✕</button>
+              </template>
+            </div>
+          </div>
+
           <div class="text-layout">
-            <div class="reg-text">
+            <div class="reg-text" ref="regTextEl">
               <template v-if="reg.blocks && reg.blocks.length">
                 <template v-for="(block, i) in reg.blocks" :key="i">
                   <div v-if="block.type === 'table'" style="overflow-x:auto;margin:14px 0">
@@ -82,26 +97,25 @@
                       <tbody>
                         <tr v-for="(row, ri) in block.rows" :key="ri">
                           <td v-for="(cell, ci) in row" :key="ci"
-                            :colspan="cell.colspan > 1 ? cell.colspan : undefined">
-                            {{ cell.text }}
-                          </td>
+                            :colspan="cell.colspan > 1 ? cell.colspan : undefined"
+                            v-html="highlight(cell.text)"></td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                   <template v-else-if="block.type === 'para'">
-                    <div v-if="isChapter(block.text)" :id="`toc-${i}`" class="reg-chapter">{{ block.text }}</div>
-                    <div v-else-if="isSection(block.text)" :id="`toc-${i}`" class="reg-section">{{ block.text }}</div>
-                    <div v-else-if="isAppendix(block.text)" :id="`toc-${i}`" class="reg-appendix">{{ block.text }}</div>
+                    <div v-if="isChapter(block.text)" :id="`toc-${i}`" class="reg-chapter" v-html="highlight(block.text)"></div>
+                    <div v-else-if="isSection(block.text)" :id="`toc-${i}`" class="reg-section" v-html="highlight(block.text)"></div>
+                    <div v-else-if="isAppendix(block.text)" :id="`toc-${i}`" class="reg-appendix" v-html="highlight(block.text)"></div>
                     <div v-else-if="articleMatch(block.text)" class="reg-article">
                       <span class="art-num">{{ articleMatch(block.text)[1] }}</span>
-                      <span>{{ articleMatch(block.text)[2] }}</span>
+                      <span v-html="highlight(articleMatch(block.text)[2])"></span>
                     </div>
-                    <p v-else-if="isItem1(block.text)" class="reg-item1">{{ block.text }}</p>
-                    <p v-else-if="isItem2(block.text)" class="reg-item2">{{ block.text }}</p>
-                    <p v-else-if="i < firstStructuralIdx && isDocNo(block.text)" class="reg-doc-no">{{ block.text }}</p>
-                    <p v-else-if="i < firstStructuralIdx" class="reg-doc-title">{{ block.text }}</p>
-                    <p v-else class="reg-para">{{ block.text }}</p>
+                    <p v-else-if="isItem1(block.text)" class="reg-item1" v-html="highlight(block.text)"></p>
+                    <p v-else-if="isItem2(block.text)" class="reg-item2" v-html="highlight(block.text)"></p>
+                    <p v-else-if="i < firstStructuralIdx && isDocNo(block.text)" class="reg-doc-no" v-html="highlight(block.text)"></p>
+                    <p v-else-if="i < firstStructuralIdx" class="reg-doc-title" v-html="highlight(block.text)"></p>
+                    <p v-else class="reg-para" v-html="highlight(block.text)"></p>
                   </template>
                 </template>
               </template>
@@ -115,7 +129,7 @@
                 <li
                   v-for="item in tocItems" :key="item.id"
                   class="reg-toc-item"
-                  :class="[`toc-${item.level}`, { active: activeSection === item.id }]"
+                  :class="['toc-' + item.level, { active: activeSection === item.id, 'toc-supplement': item.isAfterFuze }]"
                   @click="scrollToSection(item.id)"
                 >{{ item.label }}</li>
               </ul>
@@ -185,6 +199,10 @@ const reg = ref(null)
 const loading = ref(false)
 const activeTab = ref('text')
 const activeSection = ref('')
+const regTextEl = ref(null)
+const searchQuery = ref('')
+const matchIdx = ref(0)
+const totalMatches = ref(0)
 const tabs = [
   { key: 'text', label: '制度原文' },
   { key: 'charts', label: '流程图表' },
@@ -225,16 +243,91 @@ function isItem2(t)    { return ITEM2.test(t) }
 function isAppendix(t) { return APPENDIX.test(t) }
 function isDocNo(t)    { return DOC_NO.test(t) }
 
+// ── 原文搜索 ──────────────────────────────────────────────────────────
+function highlight(text) {
+  if (!searchQuery.value || !text) return escapeHtml(text || '')
+  const q = searchQuery.value.toLowerCase()
+  const lower = text.toLowerCase()
+
+  // 子串匹配优先
+  if (lower.includes(q)) {
+    const idx = lower.indexOf(q)
+    return escapeHtml(text.slice(0, idx))
+      + '<mark class="search-hl">'
+      + escapeHtml(text.slice(idx, idx + q.length))
+      + '</mark>'
+      + escapeHtml(text.slice(idx + q.length))
+  }
+
+  // 子序列匹配：逐字符高亮
+  let result = ''
+  let qi = 0
+  for (let i = 0; i < text.length; i++) {
+    if (qi < q.length && lower[i] === q[qi]) {
+      result += '<mark class="search-hl-char">' + escapeHtml(text[i]) + '</mark>'
+      qi++
+    } else {
+      result += escapeHtml(text[i])
+    }
+  }
+  return qi === q.length ? result : escapeHtml(text)
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function onSearchInput() {
+  matchIdx.value = 0
+  nextTick(countMatches)
+}
+
+function countMatches() {
+  if (!regTextEl.value || !searchQuery.value) { totalMatches.value = 0; return }
+  totalMatches.value = regTextEl.value.querySelectorAll('mark').length
+}
+
+function nextMatch() {
+  if (!regTextEl.value) return
+  const marks = regTextEl.value.querySelectorAll('mark')
+  if (!marks.length) return
+  matchIdx.value = (matchIdx.value + 1) % marks.length
+  marks[matchIdx.value].scrollIntoView({ behavior: 'smooth', block: 'center' })
+  marks.forEach(m => m.classList.remove('search-hl-active'))
+  marks[matchIdx.value].classList.add('search-hl-active')
+}
+
+function prevMatch() {
+  if (!regTextEl.value) return
+  const marks = regTextEl.value.querySelectorAll('mark')
+  if (!marks.length) return
+  matchIdx.value = (matchIdx.value - 1 + marks.length) % marks.length
+  marks[matchIdx.value].scrollIntoView({ behavior: 'smooth', block: 'center' })
+  marks.forEach(m => m.classList.remove('search-hl-active'))
+  marks[matchIdx.value].classList.add('search-hl-active')
+}
+
+function clearSearch() {
+  searchQuery.value = ''
+  totalMatches.value = 0
+  matchIdx.value = 0
+}
+
 // ── 目录 ──────────────────────────────────────────────────────────────────────
 const tocItems = computed(() => {
   if (!reg.value?.blocks) return []
+  // 找到第一个"附则"章节的位置，之后的章节/附件都归为附件区
+  const fuzeIdx = reg.value.blocks.findIndex(b =>
+    b.type === 'para' && /^第[一二三四五六七八九十百千\d]+章\s*附则/.test(b.text)
+  )
   return reg.value.blocks
     .map((b, i) => ({ ...b, _idx: i }))
     .filter(b => b.type === 'para' && (isChapter(b.text) || isSection(b.text) || isAppendix(b.text)))
     .map(b => {
+      const isAfterFuze = fuzeIdx >= 0 && b._idx > fuzeIdx
       const level = isChapter(b.text) ? 'chapter' : isSection(b.text) ? 'section' : 'appendix'
-      const label = level === 'appendix' && b.text.length > 14 ? b.text.slice(0, 14) + '…' : b.text
-      return { text: b.text, label, level, id: `toc-${b._idx}` }
+      const label = b.text.length > 16 ? b.text.slice(0, 16) + '…' : b.text
+      return { text: b.text, label, level, id: `toc-${b._idx}`, isAfterFuze }
     })
 })
 
@@ -463,12 +556,17 @@ watch(() => route.params.id, id => {
 
 .toc-chapter {
   color: var(--fg);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .toc-section {
   padding-left: 18px;
   font-size: 11px;
+}
+
+.toc-supplement {
+  font-weight: 400;
+  color: var(--subtle);
 }
 
 .reg-chapter {
@@ -572,5 +670,53 @@ watch(() => route.params.id, id => {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
   font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── 原文搜索 ── */
+.text-search-bar {
+  background: var(--surface);
+  border: 1px solid var(--blue-border);
+  border-top: none;
+  border-radius: 0;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+}
+.search-input-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 0 8px;
+  flex: 0 1 320px;
+}
+.search-icon { color: var(--muted); flex-shrink: 0; }
+.search-input {
+  flex: 1; border: none; background: none; outline: none;
+  font-size: 13px; font-family: var(--font); color: var(--fg);
+  padding: 6px 0;
+}
+.search-input::placeholder { color: var(--subtle); }
+.search-count {
+  font-size: 11px; color: var(--muted); white-space: nowrap; font-family: var(--mono);
+}
+.search-nav-btn {
+  width: 24px; height: 24px; border: none; background: transparent;
+  cursor: pointer; border-radius: 4px; font-size: 13px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.13s;
+}
+.search-nav-btn:hover { background: var(--accent-soft); color: var(--blue); }
+
+:deep(.search-hl) {
+  background: #FEF08A; color: inherit;
+  padding: 1px 2px; border-radius: 2px;
+}
+:deep(.search-hl-char) {
+  background: #FEF08A; color: inherit;
+  padding: 1px 0; border-radius: 2px;
+}
+:deep(.search-hl-active) {
+  background: #F59E0B; color: white;
 }
 </style>

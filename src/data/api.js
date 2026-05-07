@@ -42,17 +42,22 @@ export function getRegulation(id) {
   }
 }
 
-// ── 搜索 ────────────────────────────────────────────────────────────
+// ── 搜索（子序列模糊匹配）────────────────────────────────────────────
+function subseqMatch(query, target) {
+  let qi = 0
+  for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+    if (target[ti] === query[qi]) qi++
+  }
+  return qi === query.length
+}
+
 export function search(q) {
   if (!q.trim()) return []
-  const ql = q.toLowerCase()
-  return regulations.filter(r =>
-    (r.name   || '').toLowerCase().includes(ql) ||
-    (r.module || '').toLowerCase().includes(ql) ||
-    (r.item   || '').toLowerCase().includes(ql) ||
-    (r.dept   || '').toLowerCase().includes(ql) ||
-    (r.id     || '').toLowerCase().includes(ql)
-  ).slice(0, 30)
+  const ql = q.toLowerCase().trim()
+  return regulations.filter(r => {
+    const blob = `${r.name || ''} ${r.module || ''} ${r.item || ''} ${r.dept || ''} ${r.id || ''}`.toLowerCase()
+    return blob.includes(ql) || subseqMatch(ql, blob)
+  }).slice(0, 30)
 }
 
 // ── 权责匹配（与后端逻辑一致）──────────────────────────────────────
